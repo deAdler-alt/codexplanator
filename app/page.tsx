@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { LLMResponse } from "@/lib/types/llm";
 import CodeEditor from "@/components/CodeEditor";
 import DiffView from "@/components/DiffView";
 import Loader from "@/components/Loader";
 import Alert from "@/components/Alert";
 import DownloadMarkdown from "@/components/DownloadMarkdown";
+import CopyButton from "@/components/CopyButton";
 import dynamic from "next/dynamic";
 const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), { ssr: false });
 
@@ -36,6 +37,19 @@ export default function Home() {
       setLoading(false);
     }
   }
+
+  const explanationText = useMemo(
+    () => (result ? result.explanation.map((x) => `- ${x}`).join("\n") : ""),
+    [result]
+  );
+
+  const analysisText = useMemo(() => {
+    if (!result) return "";
+    const bugs = result.analysis.bugs.map((x) => `- ${x}`).join("\n");
+    const complexity = result.analysis.complexity.map((x) => `- ${x}`).join("\n");
+    const tests = result.analysis.tests.map((x) => `- ${x}`).join("\n");
+    return `Potential Bugs:\n${bugs}\n\nComplexity:\n${complexity}\n\nTest Cases:\n${tests}\n`;
+  }, [result]);
 
   return (
     <main className="min-h-screen p-6 md:p-10 max-w-6xl mx-auto">
@@ -105,12 +119,17 @@ export default function Home() {
         <>
           <div className="flex items-center justify-between mt-8 mb-2">
             <h2 className="text-lg font-semibold">Result</h2>
-            <DownloadMarkdown code={code} language={language} level={level} result={result} />
+            <div className="flex items-center gap-2">
+              <DownloadMarkdown code={code} language={language} level={level} result={result} />
+            </div>
           </div>
 
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="border rounded-lg p-4">
-              <h2 className="text-xl font-semibold mb-2">Explanation ({level})</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-semibold">Explanation ({level})</h2>
+                <CopyButton getText={() => explanationText} label="Copy" />
+              </div>
               <ul className="list-disc pl-5 space-y-1">
                 {result.explanation.map((item, idx) => (
                   <li key={idx}>{item}</li>
@@ -119,21 +138,31 @@ export default function Home() {
             </div>
 
             <div className="border rounded-lg p-4">
-              <h2 className="text-xl font-semibold mb-2">Annotated</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-semibold">Annotated</h2>
+                <CopyButton getText={() => result.annotated} label="Copy code" />
+              </div>
               <pre className="bg-gray-50 dark:bg-gray-900 p-3 rounded overflow-auto text-sm">
                 <code>{result.annotated}</code>
               </pre>
             </div>
 
             <div className="border rounded-lg p-4">
-              <h2 className="text-xl font-semibold mb-2">Refactor</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-semibold">Refactor</h2>
+                <CopyButton getText={() => result.refactor} label="Copy code" />
+              </div>
               <pre className="bg-gray-50 dark:bg-gray-900 p-3 rounded overflow-auto text-sm">
                 <code>{result.refactor}</code>
               </pre>
             </div>
 
             <div className="border rounded-lg p-4">
-              <h2 className="text-xl font-semibold mb-2">Analysis</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-semibold">Analysis</h2>
+                <CopyButton getText={() => analysisText} label="Copy" />
+              </div>
+
               <div className="space-y-3">
                 <div>
                   <h3 className="font-medium">Potential bugs</h3>
