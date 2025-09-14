@@ -7,6 +7,7 @@ import Loader from "@/components/Loader";
 import Alert from "@/components/Alert";
 import DownloadMarkdown from "@/components/DownloadMarkdown";
 import CopyButton from "@/components/CopyButton";
+import FormatButton from "@/components/FormatButton";
 import dynamic from "next/dynamic";
 const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), { ssr: false });
 
@@ -107,6 +108,9 @@ export default function Home() {
         <div className="md:col-span-3 flex flex-col gap-2">
           <label className="text-sm font-medium">Code</label>
           <CodeEditor language={language} value={code} onChange={setCode} />
+          <div className="flex items-center gap-2">
+            <FormatButton code={code} language={language} onFormatted={setCode} />
+          </div>
         </div>
 
         <div className="md:col-span-3 flex items-center gap-3">
@@ -125,6 +129,7 @@ export default function Home() {
           </div>
 
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Explanation */}
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-semibold">Explanation ({level})</h2>
@@ -137,6 +142,7 @@ export default function Home() {
               </ul>
             </div>
 
+            {/* Annotated */}
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-semibold">Annotated</h2>
@@ -147,6 +153,7 @@ export default function Home() {
               </pre>
             </div>
 
+            {/* Refactor */}
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-semibold">Refactor</h2>
@@ -157,6 +164,7 @@ export default function Home() {
               </pre>
             </div>
 
+            {/* Analysis */}
             <div className="border rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-semibold">Analysis</h2>
@@ -191,6 +199,7 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Diff */}
             <div className="md:col-span-2">
               <DiffView original={code} modified={result.refactor} language={language} />
             </div>
