@@ -5,6 +5,7 @@ import CodeEditor from "@/components/CodeEditor";
 import DiffView from "@/components/DiffView";
 import Loader from "@/components/Loader";
 import Alert from "@/components/Alert";
+import DownloadMarkdown from "@/components/DownloadMarkdown";
 import dynamic from "next/dynamic";
 const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), { ssr: false });
 
@@ -102,7 +103,12 @@ export default function Home() {
 
       {result && (
         <>
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          <div className="flex items-center justify-between mt-8 mb-2">
+            <h2 className="text-lg font-semibold">Result</h2>
+            <DownloadMarkdown code={code} language={language} level={level} result={result} />
+          </div>
+
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="border rounded-lg p-4">
               <h2 className="text-xl font-semibold mb-2">Explanation ({level})</h2>
               <ul className="list-disc pl-5 space-y-1">
