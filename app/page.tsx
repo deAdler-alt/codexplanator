@@ -1,103 +1,131 @@
-import Image from "next/image";
+"use client";
+import { useState } from "react";
+import type { LLMResponse } from "@/lib/types/llm";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [code, setCode] = useState<string>("");
+  const [language, setLanguage] = useState<string>("javascript");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<LLMResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  async function onExplain() {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch("/api/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, language }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Request failed");
+      setResult(data as LLMResponse);
+    } catch (e: any) {
+      setError(e?.message ?? "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen p-6 md:p-10 max-w-6xl mx-auto">
+      <header className="mb-6">
+        <h1 className="text-3xl font-bold">CodeXplanator 🦍</h1>
+        <p className="text-muted-foreground">Instant Code Teacher — wklej kod, kliknij Explain.</p>
+      </header>
+
+      <section className="grid grid-cols-1 gap-4">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Language</label>
+          <select
+            className="border rounded-md p-2"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <option value="javascript">JavaScript</option>
+            <option value="typescript">TypeScript</option>
+            <option value="python">Python</option>
+            <option value="java">Java</option>
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+            <option value="go">Go</option>
+          </select>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Code</label>
+          <textarea
+            className="border rounded-md p-3 font-mono min-h-[220px]"
+            placeholder="// Wklej tutaj swój kod…"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onExplain}
+            disabled={loading || code.trim().length === 0}
+            className="px-4 py-2 rounded-md bg-black text-white disabled:opacity-50"
+          >
+            {loading ? "Explaining…" : "Explain code"}
+          </button>
+          {error && <span className="text-red-600 text-sm">{error}</span>}
+        </div>
+      </section>
+
+      {result && (
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          <div className="border rounded-lg p-4">
+            <h2 className="text-xl font-semibold mb-2">Explanation</h2>
+            <ul className="list-disc pl-5 space-y-1">
+              {result.explanation.map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="border rounded-lg p-4">
+            <h2 className="text-xl font-semibold mb-2">Annotated</h2>
+            <pre className="bg-gray-50 p-3 rounded overflow-auto text-sm">
+              <code>{result.annotated}</code>
+            </pre>
+          </div>
+
+          <div className="border rounded-lg p-4">
+            <h2 className="text-xl font-semibold mb-2">Refactor</h2>
+            <pre className="bg-gray-50 p-3 rounded overflow-auto text-sm">
+              <code>{result.refactor}</code>
+            </pre>
+          </div>
+
+          <div className="border rounded-lg p-4">
+            <h2 className="text-xl font-semibold mb-2">Analysis</h2>
+            <div className="space-y-3">
+              <div>
+                <h3 className="font-medium">Potential bugs</h3>
+                <ul className="list-disc pl-5">
+                  {result.analysis.bugs.map((b, i) => <li key={i}>{b}</li>)}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-medium">Complexity</h3>
+                <ul className="list-disc pl-5">
+                  {result.analysis.complexity.map((c, i) => <li key={i}>{c}</li>)}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-medium">Test cases</h3>
+                <ul className="list-disc pl-5">
+                  {result.analysis.tests.map((t, i) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+    </main>
   );
 }
