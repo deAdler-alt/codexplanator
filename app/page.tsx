@@ -3,6 +3,9 @@ import { useState } from "react";
 import type { LLMResponse } from "@/lib/types/llm";
 import CodeEditor from "@/components/CodeEditor";
 import DiffView from "@/components/DiffView";
+import Loader from "@/components/Loader";
+import Alert from "@/components/Alert";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Home() {
   const [code, setCode] = useState<string>("");
@@ -33,11 +36,14 @@ export default function Home() {
 
   return (
     <main className="min-h-screen p-6 md:p-10 max-w-6xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold">CodeXplanator 🦍</h1>
-        <p className="text-muted-foreground">
-          Instant Code Teacher — wklej kod, kliknij Explain.
-        </p>
+      <header className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">CodeXplanator 🦍</h1>
+          <p className="text-muted-foreground">
+            Instant Code Teacher — wklej kod, kliknij Explain.
+          </p>
+        </div>
+        <ThemeToggle />
       </header>
 
       <section className="grid grid-cols-1 gap-4">
@@ -60,11 +66,7 @@ export default function Home() {
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Code</label>
-          <CodeEditor
-            language={language}
-            value={code}
-            onChange={setCode}
-          />
+          <CodeEditor language={language} value={code} onChange={setCode} />
         </div>
 
         <div className="flex items-center gap-3">
@@ -73,10 +75,12 @@ export default function Home() {
             disabled={loading || code.trim().length === 0}
             className="px-4 py-2 rounded-md bg-black text-white disabled:opacity-50"
           >
-            {loading ? "Explaining…" : "Explain code"}
+            Explain code
           </button>
-          {error && <span className="text-red-600 text-sm">{error}</span>}
+          {loading && <Loader />}
         </div>
+
+        {error && <Alert message={error} />}
       </section>
 
       {result && (
@@ -90,20 +94,16 @@ export default function Home() {
             </ul>
           </div>
 
-          <div className="md:col-span-2">
-            <DiffView original={code} modified={result.refactor} language={language} />
-          </div>
-
           <div className="border rounded-lg p-4">
             <h2 className="text-xl font-semibold mb-2">Annotated</h2>
-            <pre className="bg-gray-50 p-3 rounded overflow-auto text-sm">
+            <pre className="bg-gray-50 dark:bg-gray-900 p-3 rounded overflow-auto text-sm">
               <code>{result.annotated}</code>
             </pre>
           </div>
 
           <div className="border rounded-lg p-4">
             <h2 className="text-xl font-semibold mb-2">Refactor</h2>
-            <pre className="bg-gray-50 p-3 rounded overflow-auto text-sm">
+            <pre className="bg-gray-50 dark:bg-gray-900 p-3 rounded overflow-auto text-sm">
               <code>{result.refactor}</code>
             </pre>
           </div>
@@ -136,6 +136,10 @@ export default function Home() {
                 </ul>
               </div>
             </div>
+          </div>
+
+          <div className="md:col-span-2">
+            <DiffView original={code} modified={result.refactor} language={language} />
           </div>
         </section>
       )}
