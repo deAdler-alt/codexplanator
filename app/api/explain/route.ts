@@ -6,59 +6,55 @@ type Level = "junior" | "mid" | "senior";
 function makeExplanation(level: Level): string[] {
   if (level === "junior")
     return [
-      "Funkcja przetwarza listę elementów.",
-      "Ignoruje puste wartości.",
-      "Sumuje liczby i liczy średnią.",
-      "Zwraca wynik w posortowanej formie."
+      "The function processes a list of items.",
+      "It ignores empty values.",
+      "It sums numbers and computes an average.",
+      "It returns a sorted result.",
     ];
   if (level === "mid")
     return [
-      "Normalizuje klucze i filtruje wartości null/undefined.",
-      "Agreguje liczności i wartości liczbowe.",
-      "Oblicza sumę, liczbę wystąpień oraz średnią na klucz.",
-      "Zwraca tablicę obiektów posortowaną malejąco po sumie.",
-      "Zabezpiecza się przed nieprawidłowym typem wejścia (w przykładzie)."
+      "Normalizes keys and filters out null/undefined entries.",
+      "Aggregates counts and numeric values per key.",
+      "Computes sum, count, and average per normalized key.",
+      "Returns an array sorted by total sum (descending).",
+      "Basic input validation prevents runtime errors.",
     ];
   return [
-    "Waliduje typ wejścia i wczesnym zwrotem unika błędów wykonania.",
-    "Normalizuje klucze (trim + lower-case), co zapobiega dublowaniu kategorii.",
-    "Ignoruje wpisy bez klucza oraz wartości nienumeryczne; brakujące wartości traktuje jako 1.",
-    "Używa akumulatora (mapy) do obliczania sumy, liczby wystąpień i średniej w O(n).",
-    "Zwraca posortowaną tablicę wyników (O(k log k), k – liczba unikalnych kluczy).",
-    "Potencjalne ryzyka: brak limitu rozmiaru wejścia, brak ograniczeń wartości, brak obsługi bardzo dużych liczb.",
-    "Możliwe optymalizacje: Map zamiast plain object, wyciągnięcie normalizacji do funkcji pomocniczej.",
-    "Testy jednostkowe powinny pokrywać przypadki brzegowe oraz błędne typy danych."
+    "Validates input type early to prevent runtime failures.",
+    "Normalizes keys (trim + lower-case) to avoid duplicated categories.",
+    "Skips entries without a key and non-numeric values; missing values default to 1.",
+    "Uses an accumulator (map) to compute sum, count, and average in O(n).",
+    "Returns a sorted array of results (O(k log k), k = number of unique keys).",
+    "Potential risks: unbounded input size, no value limits, risk of large-number overflow.",
+    "Optimizations: use Map instead of plain object; extract normalization helper.",
+    "Unit tests should cover edge cases and invalid data types.",
   ];
 }
 
 function makeAnnotated(code: string, level: Level): string {
   const lines = code.split("\n");
-  // gęstość komentarzy zależna od poziomu
   const density = level === "junior" ? 0.25 : level === "mid" ? 0.5 : 1.0;
 
   const annotated = lines
-    .map((line, idx) => {
+    .map((line) => {
       const trimmed = line.trim();
       let comment = "";
 
-      // Proste heurystyki komentarzy (dla efektu WOW)
       if (/function\s+/.test(line) || /^\s*const\s+\w+\s*=\s*\(/.test(line)) {
-        comment = "Deklaracja funkcji / funkcji strzałkowej";
+        comment = "Function declaration / arrow function";
       } else if (/for\s*\(|while\s*\(/.test(line)) {
-        comment = "Pętla — iteracja po elementach";
+        comment = "Loop — iterating over items";
       } else if (/if\s*\(/.test(line)) {
-        comment = "Warunek — filtracja/gałęzie logiki";
+        comment = "Conditional branch — filtering / logic";
       } else if (/return\b/.test(line)) {
-        comment = "Zwracanie wyniku funkcji";
+        comment = "Function return";
       } else if (/import\b|require\(/.test(line)) {
-        comment = "Import zależności";
+        comment = "Import dependency";
       } else if (/map|reduce|filter/.test(line)) {
-        comment = "Operacja tablicowa (map/reduce/filter)";
+        comment = "Array operation (map/reduce/filter)";
       }
 
-      const shouldComment =
-        comment && Math.random() < density && trimmed.length > 0; // prosta losowa gęstość
-
+      const shouldComment = comment && Math.random() < density && trimmed.length > 0;
       return shouldComment ? `// ${comment}\n${line}` : line;
     })
     .join("\n");
@@ -72,57 +68,60 @@ function makeRefactor(code: string, language: string, level: Level): string {
       ? `// Refactor suggestions (${language}):\n// - Extract helper: normalizeKey\n// - Use Map for accumulation\n// - Validate inputs and throw TypeError\n// - Add unit tests for edge cases\n`
       : level === "mid"
       ? `// Refactor suggestions (${language}):\n// - Extract helper functions\n// - Add input validation\n// - Prefer const over let where possible\n`
-      : `// Minor cleanup (${language}):\n// - Naming improvements\n// - Early returns for invalid input\n`;
+      : `// Minor cleanup (${language}):\n// - Improve naming\n// - Early returns for invalid input\n`;
 
   return `${header}\n${code}`;
 }
 
 function makeAnalysis(level: Level) {
   const base = {
-    bugs: ["Brak walidacji wejścia może skutkować wyjątkiem w czasie wykonania."],
-    complexity: ["Główna ścieżka: O(n); sortowanie wyników: O(k log k)."],
-    tests: ["Puste wejście zwraca pustą tablicę."],
+    bugs: ["Missing input validation can cause runtime exceptions."],
+    complexity: ["Main pass: O(n); sorting results: O(k log k)."],
+    tests: ["Empty input returns an empty array."],
   };
 
   if (level === "junior") {
-    base.tests.push("Ignoruje null/undefined bez błędu.");
-    return base;
+    return {
+      ...base,
+      tests: [...base.tests, "Ignores null/undefined without throwing."],
+    };
   }
 
   if (level === "mid") {
     return {
       bugs: [
         ...base.bugs,
-        "Możliwa nadpisana kategoria przy różnej wielkości liter, jeśli brak normalizacji.",
+        "Potential duplicate categories if keys are not normalized (case differences).",
       ],
       complexity: [
         ...base.complexity,
-        "Normalizacja kluczy: O(n) – stały koszt per element.",
+        "Key normalization: O(n) (constant per element).",
       ],
       tests: [
         ...base.tests,
-        "Agreguje duplikaty (A/a/A ).",
-        "Poprawnie liczy średnią przy mieszanych wartościach.",
+        "Aggregates duplicates (e.g., A/a/A ).",
+        "Computes average correctly with mixed values.",
       ],
     };
   }
 
+  // senior
   return {
     bugs: [
       ...base.bugs,
-      "Ryzyko przepełnienia liczb przy bardzo dużych sumach.",
-      "Brak limitów rozmiaru wejścia (możliwy wzrost pamięci).",
+      "Risk of big-number overflow with very large sums.",
+      "Unbounded input may increase memory usage.",
     ],
     complexity: [
       ...base.complexity,
-      "Złożoność pamięciowa: O(k) dla liczby unikalnych kluczy.",
+      "Space complexity: O(k) for unique keys.",
     ],
     tests: [
       ...base.tests,
-      "Normalizacja kluczy usuwa spacje i ustala lower-case.",
-      "Mieszane wartości: liczby vs brak liczby (domyślnie 1).",
-      "Błędny typ wejścia rzuca TypeError.",
-      "Duży zestaw danych nie powoduje timeoutu.",
+      "Key normalization trims spaces and lowercases values.",
+      "Mixed values: numbers vs missing values (default to 1).",
+      "Invalid input type throws a TypeError.",
+      "Large dataset does not time out.",
     ],
   };
 }

@@ -42,7 +42,7 @@ export default function Home() {
         <div>
           <h1 className="text-3xl font-bold">CodeXplanator 🦍</h1>
           <p className="text-muted-foreground">
-            Instant Code Teacher — paste code, chose level, press Explain.
+            Instant Code Teacher — paste code, pick level, click Explain.
           </p>
         </div>
         <ThemeToggle />
@@ -73,9 +73,9 @@ export default function Home() {
             value={level}
             onChange={(e) => setLevel(e.target.value as "junior" | "mid" | "senior")}
           >
-            <option value="junior">Junior (krótko i prosto)</option>
-            <option value="mid">Mid (zbalansowane)</option>
-            <option value="senior">Senior (szczegółowo)</option>
+            <option value="junior">Junior (short & simple)</option>
+            <option value="mid">Mid (balanced)</option>
+            <option value="senior">Senior (detailed)</option>
           </select>
         </div>
 
@@ -101,64 +101,66 @@ export default function Home() {
       </section>
 
       {result && (
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          <div className="border rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-2">Explanation ({level})</h2>
-            <ul className="list-disc pl-5 space-y-1">
-              {result.explanation.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          </div>
+        <>
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div className="border rounded-lg p-4">
+              <h2 className="text-xl font-semibold mb-2">Explanation ({level})</h2>
+              <ul className="list-disc pl-5 space-y-1">
+                {result.explanation.map((item, idx) => (
+                  <li key={idx}>{item}</li>
+                ))}
+              </ul>
+            </div>
 
-          <div className="border rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-2">Annotated</h2>
-            <pre className="bg-gray-50 dark:bg-gray-900 p-3 rounded overflow-auto text-sm">
-              <code>{result.annotated}</code>
-            </pre>
-          </div>
+            <div className="border rounded-lg p-4">
+              <h2 className="text-xl font-semibold mb-2">Annotated</h2>
+              <pre className="bg-gray-50 dark:bg-gray-900 p-3 rounded overflow-auto text-sm">
+                <code>{result.annotated}</code>
+              </pre>
+            </div>
 
-          <div className="border rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-2">Refactor</h2>
-            <pre className="bg-gray-50 dark:bg-gray-900 p-3 rounded overflow-auto text-sm">
-              <code>{result.refactor}</code>
-            </pre>
-          </div>
+            <div className="border rounded-lg p-4">
+              <h2 className="text-xl font-semibold mb-2">Refactor</h2>
+              <pre className="bg-gray-50 dark:bg-gray-900 p-3 rounded overflow-auto text-sm">
+                <code>{result.refactor}</code>
+              </pre>
+            </div>
 
-          <div className="border rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-2">Analysis</h2>
-            <div className="space-y-3">
-              <div>
-                <h3 className="font-medium">Potential bugs</h3>
-                <ul className="list-disc pl-5">
-                  {result.analysis.bugs.map((b, i) => (
-                    <li key={i}>{b}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-medium">Complexity</h3>
-                <ul className="list-disc pl-5">
-                  {result.analysis.complexity.map((c, i) => (
-                    <li key={i}>{c}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-medium">Test cases</h3>
-                <ul className="list-disc pl-5">
-                  {result.analysis.tests.map((t, i) => (
-                    <li key={i}>{t}</li>
-                  ))}
-                </ul>
+            <div className="border rounded-lg p-4">
+              <h2 className="text-xl font-semibold mb-2">Analysis</h2>
+              <div className="space-y-3">
+                <div>
+                  <h3 className="font-medium">Potential bugs</h3>
+                  <ul className="list-disc pl-5">
+                    {result.analysis.bugs.map((b, i) => (
+                      <li key={i}>{b}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="font-medium">Complexity</h3>
+                  <ul className="list-disc pl-5">
+                    {result.analysis.complexity.map((c, i) => (
+                      <li key={i}>{c}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="font-medium">Test cases</h3>
+                  <ul className="list-disc pl-5">
+                    {result.analysis.tests.map((t, i) => (
+                      <li key={i}>{t}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="md:col-span-2">
-            <DiffView original={code} modified={result.refactor} language={language} />
-          </div>
-        </section>
+            <div className="md:col-span-2">
+              <DiffView original={code} modified={result.refactor} language={language} />
+            </div>
+          </section>
+        </>
       )}
     </main>
   );
