@@ -6,7 +6,9 @@ export type Analysis = {
 
 export type LLMResponse = {
   explanation: string[];
-  annotated: string;    // pełny kod z komentarzami
-  refactor: string;     // zrefaktoryzowany kod
+  annotated: string;   
+  refactor: string;     
   analysis: Analysis;
 };
+
+export type ExplainLevel = "junior" | "mid" | "senior";

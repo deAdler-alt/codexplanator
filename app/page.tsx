@@ -5,11 +5,13 @@ import CodeEditor from "@/components/CodeEditor";
 import DiffView from "@/components/DiffView";
 import Loader from "@/components/Loader";
 import Alert from "@/components/Alert";
-import ThemeToggle from "@/components/ThemeToggle";
+import dynamic from "next/dynamic";
+const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), { ssr: false });
 
 export default function Home() {
   const [code, setCode] = useState<string>("");
   const [language, setLanguage] = useState<string>("javascript");
+  const [level, setLevel] = useState<"junior" | "mid" | "senior">("mid");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<LLMResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export default function Home() {
       const res = await fetch("/api/explain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, language }),
+        body: JSON.stringify({ code, language, level }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "Request failed");
@@ -40,13 +42,13 @@ export default function Home() {
         <div>
           <h1 className="text-3xl font-bold">CodeXplanator 🦍</h1>
           <p className="text-muted-foreground">
-            Instant Code Teacher — wklej kod, kliknij Explain.
+            Instant Code Teacher — paste code, chose level, press Explain.
           </p>
         </div>
         <ThemeToggle />
       </header>
 
-      <section className="grid grid-cols-1 gap-4">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Language</label>
           <select
@@ -65,28 +67,43 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Explanation level</label>
+          <select
+            className="border rounded-md p-2"
+            value={level}
+            onChange={(e) => setLevel(e.target.value as "junior" | "mid" | "senior")}
+          >
+            <option value="junior">Junior (krótko i prosto)</option>
+            <option value="mid">Mid (zbalansowane)</option>
+            <option value="senior">Senior (szczegółowo)</option>
+          </select>
+        </div>
+
+        <div className="flex items-end">
+          <button
+            onClick={onExplain}
+            disabled={loading || code.trim().length === 0}
+            className="px-4 py-2 rounded-md bg-black text-white disabled:opacity-50 w-full"
+          >
+            {loading ? "Explaining…" : "Explain code"}
+          </button>
+        </div>
+
+        <div className="md:col-span-3 flex flex-col gap-2">
           <label className="text-sm font-medium">Code</label>
           <CodeEditor language={language} value={code} onChange={setCode} />
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onExplain}
-            disabled={loading || code.trim().length === 0}
-            className="px-4 py-2 rounded-md bg-black text-white disabled:opacity-50"
-          >
-            Explain code
-          </button>
+        <div className="md:col-span-3 flex items-center gap-3">
           {loading && <Loader />}
+          {error && <Alert message={error} />}
         </div>
-
-        {error && <Alert message={error} />}
       </section>
 
       {result && (
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
           <div className="border rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-2">Explanation</h2>
+            <h2 className="text-xl font-semibold mb-2">Explanation ({level})</h2>
             <ul className="list-disc pl-5 space-y-1">
               {result.explanation.map((item, idx) => (
                 <li key={idx}>{item}</li>
