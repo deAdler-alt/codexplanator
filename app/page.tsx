@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import type { LLMResponse } from "@/lib/types/llm";
+import CodeEditor from "@/components/CodeEditor";
+import DiffView from "@/components/DiffView";
 
 export default function Home() {
   const [code, setCode] = useState<string>("");
@@ -33,7 +35,9 @@ export default function Home() {
     <main className="min-h-screen p-6 md:p-10 max-w-6xl mx-auto">
       <header className="mb-6">
         <h1 className="text-3xl font-bold">CodeXplanator 🦍</h1>
-        <p className="text-muted-foreground">Instant Code Teacher — wklej kod, kliknij Explain.</p>
+        <p className="text-muted-foreground">
+          Instant Code Teacher — wklej kod, kliknij Explain.
+        </p>
       </header>
 
       <section className="grid grid-cols-1 gap-4">
@@ -56,11 +60,10 @@ export default function Home() {
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Code</label>
-          <textarea
-            className="border rounded-md p-3 font-mono min-h-[220px]"
-            placeholder="// Wklej tutaj swój kod…"
+          <CodeEditor
+            language={language}
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={setCode}
           />
         </div>
 
@@ -87,6 +90,10 @@ export default function Home() {
             </ul>
           </div>
 
+          <div className="md:col-span-2">
+            <DiffView original={code} modified={result.refactor} language={language} />
+          </div>
+
           <div className="border rounded-lg p-4">
             <h2 className="text-xl font-semibold mb-2">Annotated</h2>
             <pre className="bg-gray-50 p-3 rounded overflow-auto text-sm">
@@ -107,19 +114,25 @@ export default function Home() {
               <div>
                 <h3 className="font-medium">Potential bugs</h3>
                 <ul className="list-disc pl-5">
-                  {result.analysis.bugs.map((b, i) => <li key={i}>{b}</li>)}
+                  {result.analysis.bugs.map((b, i) => (
+                    <li key={i}>{b}</li>
+                  ))}
                 </ul>
               </div>
               <div>
                 <h3 className="font-medium">Complexity</h3>
                 <ul className="list-disc pl-5">
-                  {result.analysis.complexity.map((c, i) => <li key={i}>{c}</li>)}
+                  {result.analysis.complexity.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
                 </ul>
               </div>
               <div>
                 <h3 className="font-medium">Test cases</h3>
                 <ul className="list-disc pl-5">
-                  {result.analysis.tests.map((t, i) => <li key={i}>{t}</li>)}
+                  {result.analysis.tests.map((t, i) => (
+                    <li key={i}>{t}</li>
+                  ))}
                 </ul>
               </div>
             </div>
