@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import type { LLMResponse } from "@/lib/types/llm";
+import { detectLanguage, type Lang } from "@/lib/detect/language";
 
 type Level = "junior" | "mid" | "senior";
+
+function commentPrefixFor(lang: Lang) {
+  return lang === "python" ? "#" : "//";
+}
 
 function makeExplanation(level: Level): string[] {
   if (level === "junior")
@@ -31,44 +36,71 @@ function makeExplanation(level: Level): string[] {
   ];
 }
 
-function makeAnnotated(code: string, level: Level): string {
+function makeAnnotated(code: string, level: Level, lang: Lang): string {
   const lines = code.split("\n");
-  const density = level === "junior" ? 0.25 : level === "mid" ? 0.5 : 1.0;
+  const density = level === "junior" ? 0.25 : level === "mid" ? 0.5 : 0.9;
+  const prefix = commentPrefixFor(lang);
 
   const annotated = lines
     .map((line) => {
       const trimmed = line.trim();
       let comment = "";
 
-      if (/function\s+/.test(line) || /^\s*const\s+\w+\s*=\s*\(/.test(line)) {
+      if (/\bfunction\s+/.test(line) || /^\s*const\s+\w+\s*=\s*\(/.test(line)) {
         comment = "Function declaration / arrow function";
-      } else if (/for\s*\(|while\s*\(/.test(line)) {
+      }
+      if (lang === "python" && /^\s*def\s+\w+\s*\(/.test(line)) {
+        comment = "Function definition";
+      }
+      if (/\bfor\s*\(|\bwhile\s*\(/.test(line) || (lang === "python" && /^\s*(for|while)\b/.test(trimmed))) {
         comment = "Loop — iterating over items";
-      } else if (/if\s*\(/.test(line)) {
+      }
+      if (/\bif\s*\(/.test(line) || (lang === "python" && /^\s*if\b/.test(trimmed))) {
         comment = "Conditional branch — filtering / logic";
-      } else if (/return\b/.test(line)) {
+      }
+      if (/\breturn\b/.test(line) || (lang === "python" && /^\s*return\b/.test(trimmed))) {
         comment = "Function return";
-      } else if (/import\b|require\(/.test(line)) {
+      }
+      if (/\bimport\b/.test(line) || /require\(/.test(line)) {
         comment = "Import dependency";
-      } else if (/map|reduce|filter/.test(line)) {
+      }
+      if (/(map|reduce|filter)\s*\(/.test(line)) {
         comment = "Array operation (map/reduce/filter)";
       }
 
       const shouldComment = comment && Math.random() < density && trimmed.length > 0;
-      return shouldComment ? `// ${comment}\n${line}` : line;
+      return shouldComment ? `${prefix} ${comment}\n${line}` : line;
     })
     .join("\n");
 
   return annotated;
 }
 
-function makeRefactor(code: string, language: string, level: Level): string {
-  const header =
+function makeRefactor(code: string, language: string, level: Level, lang: Lang): string {
+  const base =
+    lang === "python"
+      ? [
+          `Use helper functions (e.g., normalize_key).`,
+          `Prefer dictionaries/collections.Counter for accumulation.`,
+          `Type-check inputs and raise TypeError for invalid data.`,
+        ]
+      : [
+          `Extract helper functions (e.g., normalizeKey).`,
+          `Use Map for accumulation where appropriate.`,
+          `Validate inputs and throw TypeError on invalid data.`,
+        ];
+
+  const extras =
     level === "senior"
-      ? `// Refactor suggestions (${language}):\n// - Extract helper: normalizeKey\n// - Use Map for accumulation\n// - Validate inputs and throw TypeError\n// - Add unit tests for edge cases\n`
+      ? [`Add unit tests for edge cases.`, `Consider streaming/iterators for large inputs.`]
       : level === "mid"
-      ? `// Refactor suggestions (${language}):\n// - Extract helper functions\n// - Add input validation\n// - Prefer const over let where possible\n`
-      : `// Minor cleanup (${language}):\n// - Improve naming\n// - Early returns for invalid input\n`;
+      ? [`Prefer const over let where possible.`]
+      : [`Keep naming consistent and add early returns.`];
+
+  const prefix = commentPrefixFor(lang);
+  const header = `${prefix} Refactor suggestions (${language || lang}):\n${[...base, ...extras]
+    .map((s) => `${prefix} - ${s}`)
+    .join("\n")}\n`;
 
   return `${header}\n${code}`;
 }
@@ -93,29 +125,18 @@ function makeAnalysis(level: Level) {
         ...base.bugs,
         "Potential duplicate categories if keys are not normalized (case differences).",
       ],
-      complexity: [
-        ...base.complexity,
-        "Key normalization: O(n) (constant per element).",
-      ],
-      tests: [
-        ...base.tests,
-        "Aggregates duplicates (e.g., A/a/A ).",
-        "Computes average correctly with mixed values.",
-      ],
+      complexity: [...base.complexity, "Key normalization: O(n) (constant per element)."],
+      tests: [...base.tests, "Aggregates duplicates (e.g., A/a/A ).", "Computes average correctly with mixed values."],
     };
   }
 
-  // senior
   return {
     bugs: [
       ...base.bugs,
       "Risk of big-number overflow with very large sums.",
       "Unbounded input may increase memory usage.",
     ],
-    complexity: [
-      ...base.complexity,
-      "Space complexity: O(k) for unique keys.",
-    ],
+    complexity: [...base.complexity, "Space complexity: O(k) for unique keys."],
     tests: [
       ...base.tests,
       "Key normalization trims spaces and lowercases values.",
@@ -129,18 +150,30 @@ function makeAnalysis(level: Level) {
 export async function POST(req: Request) {
   try {
     const { code, language, level } = await req.json();
-
     if (!code || typeof code !== "string") {
       return NextResponse.json({ error: "Missing 'code' string" }, { status: 400 });
     }
-    const lvl: Level = level === "junior" || level === "senior" ? level : "mid";
-    const lang = typeof language === "string" && language ? language : "unknown";
 
-    const response: LLMResponse = {
+    const lvl: Level = level === "junior" || level === "senior" ? level : "mid";
+
+    let effectiveLang: Lang;
+    if (!language || language === "auto") {
+      effectiveLang = detectLanguage(code);
+    } else {
+      const l = language.toLowerCase();
+      if (["python", "typescript", "javascript", "java", "cpp", "c", "go"].includes(l)) {
+        effectiveLang = l as Lang;
+      } else {
+        effectiveLang = detectLanguage(code);
+      }
+    }
+
+    const response: LLMResponse & { detectedLanguage: Lang } = {
       explanation: makeExplanation(lvl),
-      annotated: makeAnnotated(code, lvl),
-      refactor: makeRefactor(code, lang, lvl),
+      annotated: makeAnnotated(code, lvl, effectiveLang),
+      refactor: makeRefactor(code, language, lvl, effectiveLang),
       analysis: makeAnalysis(lvl),
+      detectedLanguage: effectiveLang,
     };
 
     return NextResponse.json(response);

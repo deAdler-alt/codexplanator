@@ -11,12 +11,15 @@ import FormatButton from "@/components/FormatButton";
 import dynamic from "next/dynamic";
 const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), { ssr: false });
 
+type Level = "junior" | "mid" | "senior";
+type AppResponse = LLMResponse & { detectedLanguage?: string };
+
 export default function Home() {
   const [code, setCode] = useState<string>("");
-  const [language, setLanguage] = useState<string>("javascript");
-  const [level, setLevel] = useState<"junior" | "mid" | "senior">("mid");
+  const [language, setLanguage] = useState<string>("auto");
+  const [level, setLevel] = useState<Level>("mid");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<LLMResponse | null>(null);
+  const [result, setResult] = useState<AppResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onExplain() {
@@ -31,7 +34,7 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "Request failed");
-      setResult(data as LLMResponse);
+      setResult(data as AppResponse);
     } catch (e: any) {
       setError(e?.message ?? "Unknown error");
     } finally {
@@ -51,6 +54,8 @@ export default function Home() {
     const tests = result.analysis.tests.map((x) => `- ${x}`).join("\n");
     return `Potential Bugs:\n${bugs}\n\nComplexity:\n${complexity}\n\nTest Cases:\n${tests}\n`;
   }, [result]);
+
+  const detected = result?.detectedLanguage;
 
   return (
     <main className="min-h-screen p-6 md:p-10 max-w-6xl mx-auto">
@@ -72,6 +77,7 @@ export default function Home() {
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
           >
+            <option value="auto">Auto (detect)</option>
             <option value="javascript">JavaScript</option>
             <option value="typescript">TypeScript</option>
             <option value="python">Python</option>
@@ -80,6 +86,11 @@ export default function Home() {
             <option value="cpp">C++</option>
             <option value="go">Go</option>
           </select>
+          {detected && (
+            <span className="text-xs text-gray-600 dark:text-gray-300">
+              Detected: <b>{detected}</b>
+            </span>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -87,7 +98,7 @@ export default function Home() {
           <select
             className="border rounded-md p-2"
             value={level}
-            onChange={(e) => setLevel(e.target.value as "junior" | "mid" | "senior")}
+            onChange={(e) => setLevel(e.target.value as Level)}
           >
             <option value="junior">Junior (short & simple)</option>
             <option value="mid">Mid (balanced)</option>
@@ -107,9 +118,9 @@ export default function Home() {
 
         <div className="md:col-span-3 flex flex-col gap-2">
           <label className="text-sm font-medium">Code</label>
-          <CodeEditor language={language} value={code} onChange={setCode} />
+          <CodeEditor language={detected || language} value={code} onChange={setCode} />
           <div className="flex items-center gap-2">
-            <FormatButton code={code} language={language} onFormatted={setCode} />
+            <FormatButton code={code} language={(detected || language) as string} onFormatted={setCode} />
           </div>
         </div>
 
@@ -124,7 +135,7 @@ export default function Home() {
           <div className="flex items-center justify-between mt-8 mb-2">
             <h2 className="text-lg font-semibold">Result</h2>
             <div className="flex items-center gap-2">
-              <DownloadMarkdown code={code} language={language} level={level} result={result} />
+              <DownloadMarkdown code={code} language={detected || language} level={level} result={result} />
             </div>
           </div>
 
@@ -201,7 +212,7 @@ export default function Home() {
 
             {/* Diff */}
             <div className="md:col-span-2">
-              <DiffView original={code} modified={result.refactor} language={language} />
+              <DiffView original={code} modified={result.refactor} language={detected || language} />
             </div>
           </section>
         </>
